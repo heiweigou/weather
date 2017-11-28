@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="bootstrap.css" type="text/css">
+    <link rel="stylesheet" href="css.css" type="text/css">
+</head>
+<body>
+
+<div class="container">
+   <div class="h1 text-center">weather condition</div>
+
+
+    <div class="row">
+        <div class="col-md-3 mx-auto weatherBox">
+            <div id="weatherGif">
+                <img src="">
+            </div>
+            <div id="weather">
+
+                <p><span>City: </span><span id="name"></span></p>
+                <p><span>Current Temperature: </span><span id="tem"></span></p>
+                <p><span>Condition: </span><span id="condition"></span></p>
+
+                <p><span>Wind Speed: </span><span id="wind"></span></p>
+            </div>
+        </div>
+        <div class="col-md-5" id="map">
+
+        </div>
+
+    </div>
+
+    <div class="form-control">
+        <input type="text" id="loc">
+        <a href="#" id="submit" class="btn btn-primary">submit</a>
+        <a href="#" id="localGeo" class="btn btn-primary">local weather</a>
+    </div>
+</div>
+</body>
+
+<script src="jquery-3.1.1.min.js"></script>
+<script src="jquery.loadTemplate-1.4.4.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAb045NZFakKgFFhdaHCEA8b5jfB0PQ3nE&callback=initMap"
+        async defer></script>
+<script type="text/html" id="template">
+
+</script>
+<script>
+
+    $(document).ready(function () {
+        var apiKey = "52bd683bca3d6863a5135a13775d9316"; // Replace "APIKEY" with your own API key; otherwise, your HTTP request will not work
+        var url = "http://api.openweathermap.org/data/2.5/weather?q=";
+        var urlGeo = "http://api.openweathermap.org/data/2.5/weather?";
+        var mapKey='AIzaSyAb045NZFakKgFFhdaHCEA8b5jfB0PQ3nE'
+        //lat=35&lon=139
+        var currLoc='';
+        var httpRequest;
+        var timeout;
+        var map;
+//        getLocalWeather()
+        getGeo()
+        document.getElementById('submit').addEventListener('click',function () {
+            clearTimeout(timeout)
+            currLoc=document.getElementById('loc').value;
+            getWeather(currLoc)
+        })
+
+        document.getElementById('loc').addEventListener('keyup',function (e) {
+            clearTimeout(timeout)
+            currLoc=document.getElementById('loc').value
+            timeout=setTimeout(function () {
+                getWeather(currLoc)
+            },3000)
+
+
+        })
+
+        document.getElementById('localGeo').addEventListener('click',function () {
+            getGeo()
+        })
+        //fetch weather data
+        function getWeather(loc) {
+            fetch(url+loc+'&appid='+apiKey).then(function (response) {
+                return response.json()
+            }).then(function (data) {
+               showWeatherData(data)
+                initMap(data.coord.lat,data.coord.lon)
+            })
+        }
+        //fetch get local weather JSON data
+        function getLocalWeather(lat,lon) {
+            fetch(urlGeo+'lat='+lat+'&lon='+lon+'&appid='+apiKey).then(function (reponse) {
+                return reponse.json()
+            }).then(function (data) {
+                showWeatherData(data)
+            })
+        }
+        //show weather JSON data
+        function showWeatherData(data) {
+            document.getElementById('name').innerHTML=data.name;
+
+            document.getElementById('tem').innerHTML=Math.floor(data.main.temp-273.15)+ '&#8451';
+            document.getElementById('wind').innerHTML=data.wind.speed;
+            document.getElementById('condition').innerHTML=data.weather[0].description;
+            showWeatherGif(data)
+
+            $('.weatherBox').removeClass('weatherBox');
+        }
+        //show weather GIF
+        function showWeatherGif(weather) {
+
+            clearErrorInfo()
+            var weatherId=weather.weather[0].id;
+            var imgNode=document.querySelector('#weatherGif img')
+            if(weatherId>=200&&weatherId<=299){
+                //200=thunderstrom
+                imgNode.src='img/thunderstorm.gif';
+            }
+            else if (weatherId>=300&&weatherId<=399){
+                //300=drizzle
+                imgNode.src='img/rain.gif';
+            }
+            else if (weatherId>=500&&weatherId<=599){
+                //500=rain
+                imgNode.src='img/rain.gif';
+            }
+            else if(weatherId>=600&&weatherId<=699){
+                //600=snow
+                imgNode.src='img/snowstorm.gif'
+
+            }
+            else if(weatherId>=800&&weatherId<=899){
+                if (weatherId===800){
+                    //800=clear else=cloudyday
+                    imgNode.src='img/sunny.gif'
+                }
+                else
+                    imgNode.src='img/cloudyday.gif'
+            }
+            else
+            {
+                var errorNode=document.createElement('p');
+                imgNode.src=''
+                errorNode.innerHTML='Sorry, we cannot display weather image'
+                document.getElementById('weatherGif').appendChild(errorNode)
+            }
+        }
+        //remove invalid info
+        function clearErrorInfo() {
+            var removeNode=document.querySelector('#weatherGif p');
+            if (removeNode)
+                removeNode.parentNode.removeChild(removeNode)
+        }
+
+        //map
+        function initMap(lat,lon) {
+            var marker;
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat:lat, lng: lon},
+                zoom: 15
+            });
+            marker=new google.maps.Marker({
+                map:map,
+                position: {lat:lat, lng: lon},
+                zoom: 15
+            })
+        }
+        //get local weather
+        function getGeo() {
+            var lat,lon;
+            var mapObj;
+            navigator.geolocation.getCurrentPosition(function (data) {
+                lat=data.coords.latitude;
+                lon=data.coords.longitude;
+                getLocalWeather(lat,lon)
+                initMap(lat,lon)
+            })
+        }
+    })
+
+
+
+</script>
+</html>
